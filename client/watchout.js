@@ -24,21 +24,28 @@ var update = function(data) {
 
   var enemies = d3.select('svg').selectAll('circle')
                             .data(data, function(d) {
-                              console.log(d.id);
                               return d.id;
                             });
 
+
   enemies.enter().append('circle')
           .attr('class', 'enemy')
-          .attr('cx', (d) => axes.x(d.x))
-          .attr('cy', (d) => axes.y(d.y))
           .attr('r', 10);
+  
+  enemies.transition()
+          .duration(900)
+          .attr('cx', (d) => axes.x(d.x))
+          .attr('cy', (d) => axes.y(d.y));
+  
+  enemies.exit().remove();
 };
+
 var asteroids = makeEnemy();
-console.log(gameBoard);
 update(asteroids);
 
-
-
+setInterval(function(){
+  var ast = makeEnemy();
+  update(ast);
+}, 1000);
 
 
