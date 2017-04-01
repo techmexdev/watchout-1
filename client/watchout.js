@@ -5,47 +5,31 @@ var dragDrop = function (dragmove) {
   return drag;
 };
 
+var dragmove = function(d) {
+  d.x += d3.event.dx;
+  d.y += d3.event.dy;
+  d3.select(this).attr('transform', 'translate(' + d.x + ', ' + d.y + ')');
+};
+var highSpan = d3.select('.highscore').selectAll('span');
+var currentScore = d3.select('.current').selectAll('span');
+var collisions = d3.select('.collisions').selectAll('span');
+var previousCollision = false;
+var collisionCount = 0;
+var score = 0;
+var highScore = 0;
+
+
+
 
 var gameBoard = d3.select('.board').append('svg')
                   .attr('width', '700px')
                   .attr('height', '450px')
                   .style('background-color', 'violet');
 
-var makeEnemy = function() {
-  var array = [];
-  for (var i = 0; i <= 30; i++) {
-    array.push(i);
-  }
-
-  return array.map((n) => {
-    return {id: n, x: Math.random() * 100, y: Math.random() * 100};
-  });
-};
-
 var axes = {x: d3.scale.linear().domain([0, 100]).range([0, 700]),
             y: d3.scale.linear().domain([0, 100]).range([0, 450])
 };
 
-var update = function(data) {
-  // debugger;
-
-  var enemies = d3.select('svg').selectAll('circle')
-                            .data(data, function(d) {
-                              return d.id;
-                            });
-
-
-  enemies.enter().append('circle')
-          .attr('class', 'enemy')
-          .attr('r', 10);
-  
-  enemies.transition()
-          .duration(900)
-          .attr('cx', (d) => axes.x(d.x))
-          .attr('cy', (d) => axes.y(d.y));
-  
-  enemies.exit().remove();
-};
 var player = function() {
   var array = [{id: 'player', x: 50, y: 50}];
 
@@ -55,8 +39,8 @@ var player = function() {
                 });
 
   shape.enter().append('rect')
-        .attr('x', (d) => axes.x(50))
-        .attr('y', (d) => axes.y(50))
+        .attr('x', 350)
+        .attr('y', 225)
         .attr('fill', 'red')
         .attr('width', '15')
         .attr('height', '15')
@@ -65,28 +49,73 @@ var player = function() {
         .call(dragDrop(dragmove));
 
 };
-var dragmove = function(d) {
-  d.x += d3.event.dx;
-  d.y += d3.event.dy;
-  d3.select(this).attr("transform", 'translate('+d.x+', '+d.y+')');
+
+var enemies = d3.select('svg').selectAll('circle')
+                          .data(d3.range(30));
+
+
+enemies.enter().append('circle')
+        .attr('class', 'enemy')
+        .attr('r', 10)
+        .attr('cx', (d) => axes.x(Math.random() * 100))
+        .attr('cy', (d) => axes.y(Math.random() * 100));
+
+enemies.exit().remove();
+
+var update = function(asteroids) {
+  asteroids.transition().duration(1500)
+        .attr('cx', (d) => axes.x(Math.random() * 100))
+        .attr('cy', (d) => axes.y(Math.random() * 100))
+        // .tween('collision', collisionDetection)
+        .each('end', function() {
+          update(d3.select(this));
+        });
+
+
 };
 
+update(enemies);
 
 player();
-var asteroids = makeEnemy();
-update(asteroids);
 
-setInterval(function() {
-  var ast = makeEnemy();
-  update(ast);
-}, 1000);
+var constantScores = function() {
+  score += 1;
+  if (score > highScore) {
+    highScore = score;
+    highSpan.text(highScore);
+  }
+  currentScore.text(score);
+};
 
-/// player polygon
-  /*shape.enter().append('polygon')
-        .attr('points', '35,7.5  37.9,16.1 46.9,16.1 39.7,21.5, 42.3,30.1 35,25 27.7,30.1 30.3,21.5, 23.1,16.1 32.1,16.1')
-        .attr('fill', 'red')
-        // .attr('cx', (d) => axes.x(d.x))
-        // .attr('cy', (d) => axes.y(d.y))
-        .attr('stroke', 'blue')
-        .attr('stroke-width', '2')
-        .attr('transform' , 'matrix(1 0 0 1 0 0)');*/
+setInterval(constantScores, 1000);
+
+var collisionDetection = function() {  
+  var user = d3.select('rect');
+  var collision = false;
+
+  enemies.each(function() {
+    thisCircle = d3.select(this);
+    dx = thisCircle.attr('cx') - (user.attr('x'));
+    dy = thisCircle.attr('cy') - (user.attr('y'));
+    distance = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+    if (distance < +thisCircle.attr('r') + 15) {
+      collision = true;
+    }
+  });
+  if (collision) {
+    score = 0;
+    if (previousCollision === collision) {
+      console.log('collided');
+      collisionCount += 1;
+      collisions.text(collisionCount);
+      currentScore.text('0');
+    }
+    previousCollision = collision;
+  }
+};
+
+previousCollision = false;
+// var timer = new Timer;
+
+// d3.timer(collisionDetection);
+setInterval(collisionDetection, 50);
