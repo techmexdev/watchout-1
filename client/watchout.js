@@ -1,4 +1,11 @@
 // start slingin' some d3 here.
+var dragDrop = function (dragmove) {
+  var drag = d3.behavior.drag()
+                        .on('drag', dragmove);
+  return drag;
+};
+
+
 var gameBoard = d3.select('.board').append('svg')
                   .attr('width', '700px')
                   .attr('height', '450px')
@@ -55,11 +62,15 @@ var player = function() {
         .attr('height', '15')
         .attr('stroke', 'blue')
         .attr('stroke-width', '2')
-        .attr('transform', 'matrix(1 0 0 1 0 0)')
-        .attr('onmousedown', 'selectElement(evt)');
+        .call(dragDrop(dragmove));
+
+};
+var dragmove = function(d) {
+  d.x += d3.event.dx;
+  d.y += d3.event.dy;
+  d3.select(this).attr("transform", 'translate('+d.x+', '+d.y+')');
 };
 
-// transform="translate(50,80)" 
 
 player();
 var asteroids = makeEnemy();
